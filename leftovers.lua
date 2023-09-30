@@ -13,84 +13,86 @@ _addon.version = '1.0.0.1'
 -- List of bags to search when searching for papers.
 listBagsToSearch = "inventory,safe,safe2,case,sack"
 -- Path needs to have the forward slash "/" between drive, folders, and sub-folders.
-pathExportFile = "C:/Windower4/DynaPapersLeftover.csv"
+pathExportFile = "C:/Windower4Kira/DynaPapersLeftover.csv"
 -- Authorized Person to execute this routine (lower-case)
 nameAuthorizedPerson = "wunjo"
 
-windower.register_event('chat message', function(message,sender,mode,gm)
-    local lowermsg = string.lower(message)
+-- To run this code, enter these commands into your console:
+--      lua r leftovers
+--      leftovers run
+windower.register_event('addon command', function (...)
+	local args = T{...}:map(string.lower)
+	if args[1] == "run" then
+        log("....Leftovers - START....")
+		Main()
+        log("....Leftovers - DONE....")
+	end
+end)
+
+function Main()
+    -- Output File Sample:
+    -- Job, Head, Trso, Hand, Legs, Foot,VHead,VTrso,VHand,VLegs,VFoot
+    -- WAR,     ,   10,    1,     ,     ,     ,   11,    2,    7,     
+    -- MNK,    2,   12,     ,    2,    4,    1,   12,    2,    4,    3
     
-    -- Only the authorized person can run this code.
-    if string.lower(sender) ~= nameAuthorizedPerson then return end
-    if lowermsg:startswith('!leftovers') then
-        log(lowermsg)
-        
-        -- Output File Sample:
-        -- Job, Head, Trso, Hand, Legs, Foot,VHead,VTrso,VHand,VLegs,VFoot
-        -- WAR,     ,   10,    1,     ,     ,     ,   11,    2,    7,     
-        -- MNK,    2,   12,     ,    2,    4,    1,   12,    2,    4,    3
-        
-        -- Jobs in sort order
-        local jobOrder = ezSplit("WAR,MNK,WHM,BLM,RDM,THF,PLD,DRK,BST,BRD,RNG,SAM,NIN,DRG,SMN,BLU,COR,PUP,DNC,SCH,GEO,RUN",",")
-        local partOrder = ezSplit("Headshard,Torsoshard,Handshard,Legshard,Footshard,Voidhead,Voidtorso,Voidhand,Voidleg,Voidfoot",",")
-        -- Testing
-        -- local jobOrder = ezSplit("WAR,MNK",",")
-        -- local partOrder = ezSplit("HeadShard,Torsoshard,Handshard,Legshard,Footshard,Voidhead,Voidtorso,Voidhand,Voidleg,Voidfoot",",")
-        
-        -- Create a table listing all known dynamis papers.  Set them all to zero.
-        local bagItems = {}
-        -- Loop through each job (WAR, MNK, etc.)
-        for _,job in ipairs(jobOrder) do
-            -- Loop through each part (headshard, torsoshard, etc.)
-            for _,part in ipairs(partOrder) do
-                -- Re-create the item name, for example: "Headshard"..": ".."MNK"
-                itemName = part..": "..job
-                bagItems[itemName] = 0
-            end
+    -- Jobs in sort order
+    local jobOrder = ezSplit("WAR,MNK,WHM,BLM,RDM,THF,PLD,DRK,BST,BRD,RNG,SAM,NIN,DRG,SMN,BLU,COR,PUP,DNC,SCH,GEO,RUN",",")
+    local partOrder = ezSplit("Headshard,Torsoshard,Handshard,Legshard,Footshard,Voidhead,Voidtorso,Voidhand,Voidleg,Voidfoot",",")
+    -- Testing
+    -- local jobOrder = ezSplit("WAR,MNK",",")
+    -- local partOrder = ezSplit("HeadShard,Torsoshard,Handshard,Legshard,Footshard,Voidhead,Voidtorso,Voidhand,Voidleg,Voidfoot",",")
+    
+    -- Create a table listing all known dynamis papers.  Set them all to zero.
+    local bagItems = {}
+    -- Loop through each job (WAR, MNK, etc.)
+    for _,job in ipairs(jobOrder) do
+        -- Loop through each part (headshard, torsoshard, etc.)
+        for _,part in ipairs(partOrder) do
+            -- Re-create the item name, for example: "Headshard"..": ".."MNK"
+            itemName = part..": "..job
+            bagItems[itemName] = 0
         end
-        
-        -- For each paper, count how many we have on this character.
-        CountItemsInBags(bagItems,listBagsToSearch)
-        
-        -- Open the export file for writing.
-        local fout = assert(io.open(pathExportFile, "w"))
-        -- Add the header row.
-        fout:write('Job, Head, Trso, Hand, Legs, Foot,VHead,VTrso,VHand,VLegs,VFoot\n')
-        
-        -- Collect all information by job and by slot
-        --
-        -- Loop through each job (WAR, MNK, etc.)
-        for _,job in ipairs(jobOrder) do
-            -- Start each new row with the job abbreviation.
-            text = job
-            -- Loop through each part (headshard, torsoshard, etc.)
-            for index,part in ipairs(partOrder) do
-                -- Re-create the item name, for example: "Headshard"..": ".."MNK"
-                itemName = part..": "..job
-                -- Get the quantity for that item.  ex. bagItems["Headshard: MNK"]
-                --      Yes, you saw that right, the item's name is the key to look up the quantity.
-                itemCount = bagItems[itemName]
-                -- Add a comma.
-                text = text..","
-                -- If we don't have any, then just put blanks, otherwise put the quantity.
-                if itemCount == 0 then
-                    -- I put blanks instead of the number ZERO so the user can quickly determine
-                    --      if we had any of that particular paper available.
-                    -- If you want to put a ZERO there, then replace the last space with a "0".
-                    text = text.."     "
-                else
-                    text = text..string.sub(string.format("      %d",itemCount),-5)
-                end
-            end
-            fout:write(text..'\n')
-        end
-        
-        -- Close the output file.
-        fout:close()
-        log("done: check output")
     end
     
-end)
+    -- For each paper, count how many we have on this character.
+    CountItemsInBags(bagItems,listBagsToSearch)
+    
+    -- Open the export file for writing.
+    local fout = assert(io.open(pathExportFile, "w"))
+    -- Add the header row.
+    fout:write('Job, Head, Trso, Hand, Legs, Foot,VHead,VTrso,VHand,VLegs,VFoot\n')
+    
+    -- Collect all information by job and by slot
+    --
+    -- Loop through each job (WAR, MNK, etc.)
+    for _,job in ipairs(jobOrder) do
+        -- Start each new row with the job abbreviation.
+        text = job
+        -- Loop through each part (headshard, torsoshard, etc.)
+        for index,part in ipairs(partOrder) do
+            -- Re-create the item name, for example: "Headshard"..": ".."MNK"
+            itemName = part..": "..job
+            -- Get the quantity for that item.  ex. bagItems["Headshard: MNK"]
+            --      Yes, you saw that right, the item's name is the key to look up the quantity.
+            itemCount = bagItems[itemName]
+            -- Add a comma.
+            text = text..","
+            -- If we don't have any, then just put blanks, otherwise put the quantity.
+            if itemCount == 0 then
+                -- I put blanks instead of the number ZERO so the user can quickly determine
+                --      if we had any of that particular paper available.
+                -- If you want to put a ZERO there, then replace the last space with a "0".
+                text = text.."     "
+            else
+                text = text..string.sub(string.format("      %d",itemCount),-5)
+            end
+        end
+        fout:write(text..'\n')
+    end
+    
+    -- Close the output file.
+    fout:close()
+end
 
 function CountItemsInBags(bagItems,listBags)
     local bagNames = {}
