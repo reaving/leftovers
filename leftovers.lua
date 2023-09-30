@@ -14,11 +14,14 @@ _addon.version = '1.0.0.1'
 listBagsToSearch = "inventory,safe,safe2,case,sack"
 -- Path needs to have the forward slash "/" between drive, folders, and sub-folders.
 pathExportFile = "C:/Windower4/DynaPapersLeftover.csv"
+-- Authorized Person to execute this routine (lower-case)
+nameAuthorizedPerson = "wunjo"
 
 windower.register_event('chat message', function(message,sender,mode,gm)
     local lowermsg = string.lower(message)
     
-    if string.lower(sender) ~= 'wunjo' then return end
+    -- Only the authorized person can run this code.
+    if string.lower(sender) ~= nameAuthorizedPerson then return end
     if lowermsg:startswith('!leftovers') then
         log(lowermsg)
         
