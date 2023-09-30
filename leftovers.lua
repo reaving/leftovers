@@ -14,8 +14,6 @@ _addon.version = '1.0.0.1'
 listBagsToSearch = "inventory,safe,safe2,case,sack"
 -- Path needs to have the forward slash "/" between drive, folders, and sub-folders.
 pathExportFile = "C:/Windower4Kira/DynaPapersLeftover.csv"
--- Authorized Person to execute this routine (lower-case)
-nameAuthorizedPerson = "wunjo"
 
 -- To run this code, enter these commands into your console:
 --      lua r leftovers
