@@ -13,7 +13,7 @@ _addon.version = '1.0.0.1'
 -- List of bags to search when searching for papers.
 listBagsToSearch = "inventory,safe,safe2,case,sack"
 -- Path needs to have the forward slash "/" between drive, folders, and sub-folders.
-pathExportFile = "C:/Windower4Kira/DynaPapersLeftover.csv"
+pathExportFile = "C:/Windower4/DynaPapersLeftover.csv"
 
 windower.register_event('chat message', function(message,sender,mode,gm)
     local lowermsg = string.lower(message)
