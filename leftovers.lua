@@ -11,7 +11,7 @@ _addon.commands = {'Leftovers'}
 _addon.version = '1.0.0.1'
 
 -- List of bags to search when searching for papers.
-listBagsToSearch = "inventory,safe,safe2,case,sack"
+listBagsToSearch = "inventory,safe,safe2,case,sack,satchel"
 -- Path needs to have the forward slash "/" between drive, folders, and sub-folders.
 pathExportFile = "C:/Windower4Kira/DynaPapersLeftover.csv"
 
