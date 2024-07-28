@@ -8,16 +8,17 @@ res = require('resources')
 _addon.name = 'Leftovers'
 _addon.author = 'Wunjo/Bahamut'
 _addon.commands = {'Leftovers'}
-_addon.version = '1.0.0.1'
+_addon.version = '1.0.0.2'
 
--- List of bags to search when searching for papers.
-listBagsToSearch = "inventory,safe,safe2,storage,locker,satchel,sack,case"
 -- Path needs to have the forward slash "/" between drive, folders, and sub-folders.
-pathExportFile = "C:/Windower4Kira/DynaPapersLeftover.csv"
+pathExportFile = "C:/Windower4/DynaPapersLeftover.csv"
+pathExportText = "C:/Windower4/DynaPapersLeftover.txt"
 
 -- To run this code, enter these commands into your console:
 --      lua r leftovers
 --      leftovers run
+-- To unload this addon:
+--      lua u leftovers
 windower.register_event('addon command', function (...)
 	local args = T{...}:map(string.lower)
 	if args[1] == "run" then
@@ -36,9 +37,6 @@ function Main()
     -- Jobs in sort order
     local jobOrder = ezSplit("WAR,MNK,WHM,BLM,RDM,THF,PLD,DRK,BST,BRD,RNG,SAM,NIN,DRG,SMN,BLU,COR,PUP,DNC,SCH,GEO,RUN",",")
     local partOrder = ezSplit("Headshard,Torsoshard,Handshard,Legshard,Footshard,Voidhead,Voidtorso,Voidhand,Voidleg,Voidfoot",",")
-    -- Testing
-    -- local jobOrder = ezSplit("WAR,MNK",",")
-    -- local partOrder = ezSplit("HeadShard,Torsoshard,Handshard,Legshard,Footshard,Voidhead,Voidtorso,Voidhand,Voidleg,Voidfoot",",")
     
     -- Create a table listing all known dynamis papers.  Set them all to zero.
     local bagItems = {}
@@ -53,7 +51,7 @@ function Main()
     end
     
     -- For each paper, count how many we have on this character.
-    CountItemsInBags(bagItems,listBagsToSearch)
+    CountItemsInBags(bagItems)
     
     -- Open the export file for writing.
     local fout = assert(io.open(pathExportFile, "w"))
@@ -90,40 +88,109 @@ function Main()
     
     -- Close the output file.
     fout:close()
+    
+    -- Open the export file for writing.
+    local fout = assert(io.open(pathExportText, "w"))
+    
+    -- Collect all information by job and by slot
+    --
+    -- Loop through each job (WAR, MNK, etc.)
+    for _,job in ipairs(jobOrder) do
+        
+        if job == 'WAR' or job == 'THF' or job == 'RNG' or job == 'BLU' or job == 'GEO' then
+            -- Add the header row.
+            fout:write('Job,Type, Head, Trso, Hand, Legs, Foot\n')
+        end
+        
+        -- Start each new row with the job abbreviation.
+        text = job..',Shrd'
+        text = text..','..string.sub(string.format("      %d",bagItems["Headshard: "..job]),-5)
+        text = text..','..string.sub(string.format("      %d",bagItems["Torsoshard: "..job]),-5)
+        text = text..','..string.sub(string.format("      %d",bagItems["Handshard: "..job]),-5)
+        text = text..','..string.sub(string.format("      %d",bagItems["Legshard: "..job]),-5)
+        text = text..','..string.sub(string.format("      %d",bagItems["Footshard: "..job]),-5)
+        fout:write(text..'\n')
+        
+        text = job..',Void'
+        text = text..','..string.sub(string.format("      %d",bagItems["Voidhead: "..job]),-5)
+        text = text..','..string.sub(string.format("      %d",bagItems["Voidtorso: "..job]),-5)
+        text = text..','..string.sub(string.format("      %d",bagItems["Voidhand: "..job]),-5)
+        text = text..','..string.sub(string.format("      %d",bagItems["Voidleg: "..job]),-5)
+        text = text..','..string.sub(string.format("      %d",bagItems["Voidfoot: "..job]),-5)
+        fout:write(text..'\n')
+        
+        fout:write('\n')
+    end
+    
+    -- Close the output file.
+    fout:close()
 end
 
-function CountItemsInBags(bagItems,listBags)
-    local bagNames = {}
-    bagNames = ezSplit(listBags,",")
+function CountItemsInBags(bagItems)
+    -- This get the list of all bags.
+    bags = res.bags
+    -- "res.bags" refers to <windower directory>\res\bags.lua
+    -- The key, "k", in the for-loop is the left side of the first equals sign
+    -- For example: k = 0, v is the list of characteristics, all that stuff in the "{}".
+    -- For example: k = 0, v is all that stuff in the "{}".
+    -- You can get the id by referring to v['id'], get the English name using v['en'], etc.
+    -- [0] = {id=0,en="Inventory",access="Everywhere",command="inventory",equippable=true},
+    -- [1] = {id=1,en="Safe",access="Mog House",command="bank"},
+    -- [2] = {id=2,en="Storage",access="Mog House",command="storage"},
     
-    -- Loop through the list of bags
-    for _,bagName in ipairs(bagNames) do
-        -- The .get_items() method returns a list/array of items that are stored on the current 
-        --      character's specified bag.
-        bagContents = windower.ffxi.get_items(bagName)
-        -- Count those items
-        CountItemsInBag(bagItems,bagContents)
+    -- Loop through all the bags.
+    for k, v in pairs(bags) do
+        -- print(k, v['id'], v['en'], v['command'])
+        -- https://github.com/Windower/Lua/wiki/FFXI-Functions#windowerffxiget_bag_infobag
+        -- "get_bag_info" returns a set of three items {count,enabled,max}
+        -- We're interested in the enabled just in case the mule that stores
+        -- these items doesn't have a bag enabled.
+        bag = windower.ffxi.get_bag_info(v['id'])
+        -- Only check the bag if it is enabled on the current character.
+        if bag['enabled'] then
+            -- print('Searching this bag: '..v['en'])
+            -- Use the bag ID to get the contents of this bag.
+            bagContents = windower.ffxi.get_items(v['id'])
+            -- This routine counts the papers contained in this bag (bagContents)
+            -- and adds them to the papers list (bagItems).
+            CountItemsInBag(bagItems,bagContents)
+        end
     end
 end
 
 function CountItemsInBag(bagItems,bagContents)
-    -- Loop through the "items" list
-    for _,v in ipairs(bagContents) do
-        -- <windower directory>\res\items.lua
-        -- 
-        -- Note: "v" stands for the item's characteristics array.  This array contains information
-        --      like Item ID, Count, and other information that the FFXI client stores in memory 
-        --      about this item.  It does not store the item's name.  We have to get that from the 
-        --      resources/items array (res.items[#]).
-        
+    -- Wiki Page: https://github.com/Windower/Lua/wiki/FFXI-Functions#windowerffxiget_itemsbag-index
+    -- Structure:
+    --      count: int,
+    --      status: int,
+    --      id: int,
+    --      slot: int,
+    --      bazaar: int,
+    --      extdata: string,    
+    
+    -- Loop through the "items" list that we collected in the bagContents list.
+    -- The key, "k", in the for-loop is the item IDs contained in "bagContents".
+    -- The value set, "v", represents the set of the item's structure.
+    -- In this case, v = {count,status,id,slot,bazaar,extdata}
+    -- You can get the count of that item by using v['count']
+    
+    -- Loop through all the items in "bagContents".
+    for k, v in ipairs(bagContents) do
         -- If the Item ID corresponds to a shard/void paper, then ...
-        if v.id >= 9544 and v.id <= 9763 then
-            nameItem = res.items[v.id].name
+        if v['id'] >= 9544 and v['id'] <= 9763 then
+            -- Note that "name" is not in "bagContents".
+            -- We can get the item name from "res.items".
+            -- "res.items" Source: <windower directory>\res\items.lua
+            -- Just supply the ID and get the name.
+            nameItem = res.items[v['id']].name
+            -- print(nameItem)
             -- If we don't have that item listed in the bagItems array, then add it.
             if bagItems[nameItem] == nil then
                 bagItems[nameItem] = 0
             end
-            bagItems[nameItem] = bagItems[nameItem] + v.count
+            -- Get the item count for this item in the current bag.
+            -- Add it to the "bagItems" record for that item.
+            bagItems[nameItem] = bagItems[nameItem] + v['count']
         end
     end
 end
